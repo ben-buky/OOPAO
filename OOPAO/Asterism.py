@@ -19,8 +19,6 @@ class Asterism:
         _ list_src              : a list of Source objects that can combine NGS and LGS types
 
         ************************** COUPLING AN ASTERISM OBJECT **************************
-        
-         
 
         Once generated, an asterism  object "ast" can be coupled to a Telescope "tel" that contains the OPD.
         _ This is achieved using the * operator     : ast*tel
@@ -44,9 +42,6 @@ class Asterism:
         src_4 = Source(opticalBand = 'H', magnitude = 8, coordinates=[60,240])
 
         ast = Asterism([src_1,src_2,src_3, src_4])
-        
-        
-        
 
 
         """
