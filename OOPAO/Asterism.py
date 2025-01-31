@@ -44,6 +44,9 @@ class Asterism:
         src_4 = Source(opticalBand = 'H', magnitude = 8, coordinates=[60,240])
 
         ast = Asterism([src_1,src_2,src_3, src_4])
+        
+        
+        
 
 
         """
