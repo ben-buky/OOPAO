@@ -25,7 +25,7 @@ LBT = LBT_analyser(param,binning,make_plots=True,atm=False)
 
 LBT.init_SPRINT(recompute_sensitivity=True)
 
-#%% Use SPRINT to estimate mis-registrations for raw signals from LBT
+#%% Use SPRINT to estimate mis-registrations of raw signals from LBT
 
 # Define the files to use
 trck = '20201001_075153'
