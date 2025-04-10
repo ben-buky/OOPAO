@@ -57,7 +57,7 @@ class LBT_analyser:
         else:
             self.m_ref = misReg
             
-    def init_SPRINT(self,mode=30,recompute_sensitivity=True):
+    def init_SPRINT(self,mode=30,n_mis_reg=3,recompute_sensitivity=True):
         
         # modal basis considered
         index_modes = [mode]
@@ -82,7 +82,7 @@ class LBT_analyser:
         self.obj.dm      = self.dm_lbt
         self.obj.param   = self.param
             
-        self.sprint = SPRINT(self.obj,basis,mis_registration_zero_point =  self.m_ref, wfs_mis_registered=self.wfs, recompute_sensitivity=recompute_sensitivity)
+        self.sprint = SPRINT(self.obj, basis, mis_registration_zero_point=self.m_ref, wfs_mis_registered=self.wfs, n_mis_reg=n_mis_reg, recompute_sensitivity=recompute_sensitivity)
         
     def get_on_sky_modulated_signal(self,slopes,phi,info):
         # raw slopes from LBT (scrambled)

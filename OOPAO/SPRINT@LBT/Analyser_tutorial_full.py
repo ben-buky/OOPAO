@@ -7,6 +7,7 @@ Created on Wed Mar 19 16:54:09 2025
 This tutorial aims to explain in as much detail as possible how to use LBT_analyser to run SPRINT on some LBT data.
 """
 import matplotlib.pyplot as plt
+import numpy as np
 from LBT_analyser import LBT_analyser
 from build_LBT import BB_file_picker
 #%% read parameter file
@@ -67,6 +68,7 @@ print('Reference Shifts: X = ' + str(LBT.m_ref.shiftX) + ' m, Y = ' + str(LBT.m_
 # LBT analyser is hardcoded to just run SPRINT on shiftX, shiftY, and rotation 
 
 LBT.init_SPRINT(mode=30,                      # 30 is the default mode but can be changed if desired
+                n_mis_reg=3,                  # the number of mis-registration variables. The default is 3, which are shiftX, shiftY, and rotation
                 recompute_sensitivity=True)   # if you've already generated sensitivity matrices for this configuration you may not need to do it again
 
 #%% Define the raw LBT files you want to run SPRINT on, three files are needed to generate a demodulated signal with all the associated info
@@ -104,3 +106,55 @@ LBT.run_SPRINT(n_iteration=6,         # set the number of iterations you want SP
 # Print the SPRINT estimates compared to the LBT flux estimates
 print('Flux Method shift estimates = ' + str(round(LBT.data_info.sx,4)) + ',' + str(round(LBT.data_info.sy,4)))
 print('SPRINT estimate (X shift, Y shift, rotation) = ' + str(LBT.misreg_est))
+
+#%% Run SPRINT on a series of files (eg if a ramp of misregistrations have been applied)
+
+# Define the files using the unique tracking number for each set
+trck = ['20201001_075009','20201001_075108','20201001_075153','20201001_075233','20201001_075444']
+
+# Create arrays for storing flux method and SPRINT estimates
+Flux_ests = np.zeros((len(trck),2))
+SPRINT_ests = np.zeros((len(trck),3))
+
+for i in range(len(trck)):
+    
+    loc = '../demodulated_slopes_orig/bin_1/'+str(trck[i])
+    
+    slopes = loc + '/demodulated_slopes.fits'
+    phi = loc + '/phi.fits'
+    info = loc + '/data_info.fits'
+
+    # De-modulate the LBT data
+    LBT.get_on_sky_modulated_signal(slopes=slopes, phi=phi, info=info)
+
+    # Plot the signal being sent to SPRINT
+    plt.figure()
+    plt.imshow(LBT.slopes_2D)
+    plt.title('Signal for ' + str(trck[i]))
+    plt.show()
+    
+    # Run SPRINT
+    LBT.run_SPRINT(n_iteration=6,gain_estimation=1)
+    print('SPRINT MISREGS = ' + str(LBT.misreg_est))
+    
+    # Save the estimates
+    Flux_ests[i] = [LBT.data_info.sx,LBT.data_info.sy]
+    SPRINT_ests[i] = LBT.misreg_est
+
+# Plot the results for X and Y shift
+fig,axs = plt.subplots(1,2,figsize=(10,5))
+
+axs[0].plot(SPRINT_ests[:,0],'.--',label='SPRINT')
+axs[0].plot(Flux_ests[:,0],'.--',label='LBT')
+axs[0].set(xlabel='Mis-registration case',ylabel='ShiftX [m]')
+axs[0].legend()
+
+axs[1].plot(SPRINT_ests[:,1],'.--',label='SPRINT')
+axs[1].plot(Flux_ests[:,1],'.--',label='LBT')
+axs[1].set(xlabel='Mis-registration case',ylabel='ShiftY [m]')
+axs[1].legend()
+
+plt.suptitle('SPRINT vs Flux Method on LBT Data')
+fig.tight_layout()
+plt.show()
+    
