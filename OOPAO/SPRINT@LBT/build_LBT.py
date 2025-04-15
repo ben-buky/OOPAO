@@ -13,7 +13,6 @@ from OOPAO.MisRegistration import MisRegistration
 from OOPAO.Atmosphere import Atmosphere
 from OOPAO.Pyramid import Pyramid
 #from OOPAO.DeformableMirror import DeformableMirror
-#from OOPAO.MisRegistration import MisRegistration
 from OOPAO.Telescope import Telescope
 from OOPAO.Source import Source
 #from OOPAO.calibration.ao_calibration import ao_calibration
@@ -24,47 +23,66 @@ from OOPAO.mis_registration_identification_algorithm.applyMisRegistration import
 #import skimage.transform as sk
 #import ctypes
 from OOPAO.tools.displayTools import displayMap#, makeSquareAxes
-from lbt_tools import get_influence_functions
 from lbt_tools import get_wfs_pupil, get_int_mat_from_lbt
 
 def BB_file_picker(param,which_tel,binning):
     
-    loc = '../lbt_data/'
+    # set whether you're using new or old data
+    if param['new_IF']:
+        loc = '../new_data_from_lbt/'
+        
+        # determine which telescope you're using
+        if which_tel == 'Left':
+            
+            side = 'SX'
+            KL = 'KL_v20'
+            # tracking numbers for the valid pupil mask for the PWFS
+            trck_pup = ['bin1/20250219_221329','bin2/20250222_202110','bin3/20250222_212311','bin4/20230320_000004']
+            # tracking numbers for the interaction matrices - binning=3 doesn't work and binning=4 doesn't exist hence 444444
+            trck_int_mat = ['20181215_201757','20190401_211243','20200225_144315','bin4_old']
+            
+        if which_tel == 'Right':
+            
+            side = 'DX'
+            KL = 'KL_v29'
+            # tracking numbers for the valid pupil mask for the PWFS
+            trck_pup = ['bin1/20200131_180431','bin2/20200205_211349','bin3/20230117_192316','bin4/20230221_093800']
+            # tracking numbers for the interaction matrices - binning=3 doesn't work
+            trck_int_mat = ['20230117_165253','20230120_192846','20230117_224144','20230118_200801']
+         
+        # set parameters
+        param['filename_pup']  = loc + side+'/pupils/'+trck_pup[binning-1]+'/pup1.fits'
+        param['slopex']        = loc + side+'/pupils/'+trck_pup[binning-1]+'/slopex'
+        param['int_mat']       = loc + side+'/'+KL+'/RECs/Intmat_'+trck_int_mat[binning-1]+'.fits'
+        
+        # influence functions file
+        param['filename_if']        = loc + side+'/'+KL+'/phase_matrix.sav'
+        # ASM eigen modes
+        param['filename_mir_modes'] = loc + side+'/'+KL+'/phase_matrix.sav'
+        # Mode to Command matrix
+        param['filename_m2c']       = loc + side+'/'+KL+'/phase_matrix.sav'
+        
+        # all configurations use the same ASM coordinates file but I've made two copies of it
+        param['filename_coord'] = loc + 'act_coordinates.fits'
     
-    if which_tel == 'Left':
+    else:
+        # the old data only covers the left telescope
+        loc = '../old_data_from_lbt'
         
-        # tracking numbers for the valid pupil mask for the PWFS
-        trck_pup = ['20250219_221329','20250222_202110','20250222_212311','20230320_000004']
-        # tracking numbers for the interaction matrices - binning=3 doesn't work and binning=4 doesn't exist hence 444444
-        trck_int_mat = ['20181215_201757','20190401_211243','20200225_144315','bin4_old']
+        # tracking numbers
+        trck_pup = ['mode2/20190909_203854','mode3/20190606_074345','mode4/20200210_000000','mode5/20200916_173857']
+        trck_int_mat = ['20181215_201757','20190401_211243','20200225_144315','20200917_152928']
         
-        param['filename_pup'] = loc + 'Left/pupils/bin'+str(binning)+'/'+trck_pup[binning-1]+'/pup1.fits'
-        # Modes To Command matrix
-        param['filename_m2c']       = loc+'Left/KL_v20/m2c.fits'
-        # Interaction Matrix
-        param['int_mat'] = loc+'Left/KL_v20/RECs/IntMat_'+trck_int_mat[binning-1]+'.fits'
-        param['slopex'] = loc+'Left/pupils/bin'+str(binning)+'/'+trck_pup[binning-1]+'/slopex'
+        # set parameters
+        param['filename_pup']  = loc + '/SX/pupils/'+trck_pup[binning-1]+'/pup1.fits'
+        param['slopex']        = loc + '/SX/pupils/'+trck_pup[binning-1]+'/slopex.dat'
+        param['int_mat']       = loc + '/SX/KL_v20/RECs/Intmat_'+trck_int_mat[binning-1]+'.fits'
         
-    if which_tel == 'Right':
-        
-        # tracking numbers for the valid pupil mask for the PWFS
-        trck_pup = ['20200131_180431','20200205_211349','20230117_192316','20230221_093800']
-        # tracking numbers for the interaction matrices - binning=3 doesn't work
-        trck_int_mat = ['20230117_165253','20230120_192846','20230117_224144','20230118_200801']
-        
-        param['filename_pup'] = loc + 'Right/pupils/bin'+str(binning)+'/'+trck_pup[binning-1]+'/pup1.fits'
-        # Modes To Command matrix
-        param['filename_m2c']       = loc+'Right/KL_v29/m2c.fits'
-        # Interaction Matrix
-        param['int_mat'] = loc+'Right/KL_v29/RECs/IntMat_'+trck_int_mat[binning-1]+'.fits'
-        param['slopex'] = loc+'Right/pupils/bin'+str(binning)+'/'+trck_pup[binning-1]+'/slopex'
-        
-    # influence functions file
-    param['filename_if']        = loc+'LBT672bIF.fits'
-    # ASM eigen modes
-    param['filename_mir_modes'] = loc+'mirmodes.fits'
-    # Coordinates of the ASM actuators
-    param['filename_coord']     = loc+'act_coordinates.fits'
+        param['filename_if']        = loc + '/SX/KL_v20/LBT672bIF.fits'
+        param['filename_mir_modes'] = loc + '/SX/KL_v20/mirmodes.fits'
+        param['filename_m2c']       = loc + '/SX/KL_v20/m2c.fits'
+        # all configurations use the same ASM coordinates file but I've made two copies of it
+        param['filename_coord'] = loc + '/act_coordinates.fits'
 
 
 def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500,atm=True):
@@ -144,6 +162,50 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
         atm.initializeAtmosphere(tel)
     else:
         atm=None 
+        
+    # --------------------     REFERENCE MISREG   -------------------------------
+    
+    # NEED SEPARATE MISREG OBJECT JUST FOR DM SO WE HAVE NO SHIFTS WHEN CALCULATING M2C
+    
+    if misReg is None:
+        # apply standard reference misreg from full SPRINT calculation
+        m_ref_wfs = MisRegistration()     
+        m_ref_wfs.shiftX            = 0.137   # in metres
+        m_ref_wfs.shiftY            = -0.004  # in metres
+        
+        m_ref_dm = MisRegistration()
+        m_ref_dm.rotationAngle     = 299.486 # in degrees
+        m_ref_dm.radialScaling     = 0.025
+        m_ref_dm.tangentialScaling = 0.019
+        
+    else:
+        m_ref_wfs = MisRegistration()     
+        m_ref_wfs.shiftX            = misReg.shiftX
+        m_ref_wfs.shiftY            = misReg.shiftY
+        
+        m_ref_dm = MisRegistration()
+        m_ref_dm.rotationAngle     = misReg.rotationAngle
+        m_ref_dm.radialScaling     = misReg.radialScaling
+        m_ref_dm.tangentialScaling = misReg.tangentialScaling
+    
+    # ----------------   BUILD INFLUENCE FUNCTIONS   ----------------------------
+    
+    if param['new_IF']:
+        from lbt_tools import get_influence_functions_new as get_influence_functions
+    else:
+        from lbt_tools import get_influence_functions as get_influence_functions
+    
+    # compute the LBT ASM influence function applying the proper sampling and mis-registrations
+    modes_lbt, coord_lbt, M2C, validAct =  get_influence_functions(telescope = tel,
+                                                                   misReg = m_ref_dm,
+                                                                   filename_IF = param['filename_if'],
+                                                                   filename_mir_modes = param['filename_mir_modes'],
+                                                                   filename_coordinates = param['filename_coord'],
+                                                                   filename_M2C = param['filename_m2c'])
+    
+    if param['new_IF']:
+        dm_sum = np.reshape(np.sum(modes_lbt**2, axis =2),[tel.resolution, tel.resolution])
+        tel.pupil = (dm_sum!=0)
     
     # ---------------------     GET PUPIL MASK   --------------------------------
     
@@ -190,40 +252,7 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
         plt.title('Quadrant 1 before shifting')
         plt.show()
         
-    # --------------------     REFERENCE MISREG   -------------------------------
     
-    # NEED SEPARATE MISREG OBJECT JUST FOR DM SO WE HAVE NO SHIFTS WHEN CALCULATING M2C
-    
-    if misReg is None:
-        # apply standard reference misreg from full SPRINT calculation
-        m_ref_wfs = MisRegistration()     
-        m_ref_wfs.shiftX            = 0.137   # in metres
-        m_ref_wfs.shiftY            = -0.004  # in metres
-        
-        m_ref_dm = MisRegistration()
-        m_ref_dm.rotationAngle     = 299.486 # in degrees
-        m_ref_dm.radialScaling     = 0.025
-        m_ref_dm.tangentialScaling = 0.019
-        
-    else:
-        m_ref_wfs = MisRegistration()     
-        m_ref_wfs.shiftX            = misReg.shiftX
-        m_ref_wfs.shiftY            = misReg.shiftY
-        
-        m_ref_dm = MisRegistration()
-        m_ref_dm.rotationAngle     = misReg.rotationAngle
-        m_ref_dm.radialScaling     = misReg.radialScaling
-        m_ref_dm.tangentialScaling = misReg.tangentialScaling
-    
-    # ----------------   BUILD INFLUENCE FUNCTIONS   ----------------------------
-    
-    # compute the LBT ASM influence function applying the proper sampling and mis-registrations
-    modes_lbt, coord_lbt, M2C, validAct =  get_influence_functions(telescope = tel,
-                                                                   misReg = m_ref_dm,
-                                                                   filename_IF = param['filename_if'],
-                                                                   filename_mir_modes = param['filename_mir_modes'],
-                                                                   filename_coordinates = param['filename_coord'],
-                                                                   filename_M2C = param['filename_m2c'])
     
     # -------------------     DEFORMABLE MIRROR   -------------------------------
     # WARNING: wfs is provided to the applyMisRegistration, the WFS pupils are shifted instead of the DM. 
@@ -295,3 +324,5 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
     M2C_KL = M2C[:,:n_modes]
 
     return  tel, ngs, atm, dm, wfs, M2C_KL, calib_modal
+
+def ref_picker(param,)

@@ -12,6 +12,106 @@ from OOPAO.MisRegistration  import MisRegistration
 import numpy as np
 import skimage.transform as sk
 from OOPAO.tools.tools import read_fits, emptyClass
+import scipy
+
+def get_influence_functions_new(telescope, misReg, filename_IF,filename_mir_modes,filename_coordinates, filename_M2C):
+    # misReg.rotationAngle += 0
+    #% Load eigen modes of the mirror
+    tmp = scipy.io.readsav(filename_IF)
+    influenceFunctions_ASM = np.zeros([tmp['dpix']*tmp['dpix'],tmp['klmatrix'].shape[1]])
+    influenceFunctions_ASM[tmp['idx_mask'],:] = tmp['klmatrix']
+    influenceFunctions_ASM = influenceFunctions_ASM.reshape(tmp['dpix'],tmp['dpix'],influenceFunctions_ASM.shape[1]).T
+    # hdu = pfits.open(filename_IF)
+    # F = hdu[0].data.byteswap().newbyteorder()
+    # influenceFunctions_ASM = F[:,30:470,19:459]
+    a= time.time()
+    nAct,nx, ny = influenceFunctions_ASM.shape
+    pixelSize_ASM_original = 8.25/nx
+    # size of the influence functions maps
+    resolution_ASM_original       = int(nx)   
+    # resolution of the M1 pupil
+    resolution_M1                = telescope.pupil.shape[1]
+    # compute the pixel scale of the M1 pupil
+    pixelSize_M1                 = 8.25/resolution_M1
+    # compute the ratio_ASM_M1 between both pixel scale.
+    ratio_ASM_M1                  = pixelSize_ASM_original/pixelSize_M1
+    # after the interpolation the image will be shifted of a fraction of pixel extra if ratio_ASM_M1 is not an integer
+    extra = (ratio_ASM_M1)%1 
+
+    # difference in pixels between both resolutions    
+    nPix = resolution_ASM_original-resolution_M1
+    
+    if nPix%2==0:
+        # case nPix is even
+        # alignement of the array with respect to the interpolation 
+        # (ratio_ASM_M1 is not always an integer of pixel)
+        extra_x = extra/2 -0.5
+        extra_y = extra/2 -0.5
+        
+        # crop one extra pixel on one side
+        nCrop_x = nPix//2
+        nCrop_y = nPix//2
+    else:
+        # case nPix is uneven
+        # alignement of the array with respect to the interpolation 
+        # (ratio_ASM_M1 is not always an integer of pixel)
+        extra_x = extra/2 -0.5 -0.5
+        extra_y = extra/2 -0.5 -0.5
+        # crop one extra pixel on one side
+        nCrop_x = nPix//2
+        nCrop_y = (nPix//2)+1
+           
+    # allocate memory to store the influence functions
+    influMap = np.zeros([resolution_ASM_original,resolution_ASM_original])  
+    
+    #-------------------- The Following Transformations are applied in the following order -----------------------------------
+       
+    # 1) Down scaling to get the right pixel size according to the resolution of M1
+    downScaling     = anamorphosisImageMatrix(influMap,0,[ratio_ASM_M1,ratio_ASM_M1])
+    
+    # 2) transformations for the mis-registration
+    anamMatrix              = anamorphosisImageMatrix(influMap,misReg.anamorphosisAngle,[1+misReg.radialScaling,1+misReg.tangentialScaling])
+    rotMatrix               = rotateImageMatrix(influMap,misReg.rotationAngle)
+    shiftMatrix             = translationImageMatrix(influMap,[-misReg.shiftX/pixelSize_M1,-misReg.shiftY/pixelSize_M1]) #units are in m
+    
+    # Shift of half a pixel to center the images on an even number of pixels
+    alignmentMatrix         = translationImageMatrix(influMap,[extra_x,extra_y])
+        
+    # 3) Global transformation matrix
+    transformationMatrix    = downScaling + anamMatrix + rotMatrix + shiftMatrix + alignmentMatrix
+    
+    def globalTransformation(image):
+            output  = sk.warp(image,(transformationMatrix).inverse,order=0)
+            return output
+    # definition of the function that is run in parallel for each 
+    def reconstruction_IF(influMap):
+        output = globalTransformation(np.fliplr(influMap))  
+        return output    
+    def joblib_reconstruction():
+        Q=Parallel(n_jobs=4,prefer='threads')(delayed(reconstruction_IF)(i) for i in influenceFunctions_ASM)
+        return Q 
+    influenceFunctions_tmp =  np.moveaxis(np.asarray(joblib_reconstruction()),0,-1)
+    influenceFunctions = influenceFunctions_tmp  [nCrop_x:-nCrop_y,nCrop_x:-nCrop_y,:]
+    # influenceFunctions = influenceFunctions.reshape(influenceFunctions.shape[0]*influenceFunctions.shape[1],nAct)
+    
+    # b= time.time()
+    # hdu = pfits.open(filename_mir_modes)
+    # U = hdu[0].data
+    # mod2zon = np.reshape(U[np.where(np.abs(U)!=0)],[663,663])
+    # influenceFunctions = influenceFunctions_tmp@ mod2zon.T
+    M2C = tmp['klm2c']
+    validAct = np.where(M2C[:,2]!=0)
+    validAct = validAct[0].astype(int)
+    M2C = M2C[validAct,:influenceFunctions.shape[2]]
+    # M2C *=-1
+    M2C = np.eye(nAct)
+    influenceFunctions = -influenceFunctions
+    hdu = pfits.open(filename_coordinates)
+    coordinates_ASM_original =   hdu[0].data[validAct,:]/100
+    # recenter the initial coordinates_M4_originalinates around 0
+    coordinates_ASM = (coordinates_ASM_original)*ratio_ASM_M1  
+    return influenceFunctions, coordinates_ASM, M2C, validAct
+
 
 def get_influence_functions(telescope, misReg, filename_IF,filename_mir_modes,filename_coordinates, filename_M2C):
     #% Load eigen modes of the mirror

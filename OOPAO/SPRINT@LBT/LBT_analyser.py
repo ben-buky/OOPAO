@@ -26,8 +26,6 @@ class LBT_analyser:
         
         """
         
-        self.tel, self.ngs, self.atm, self.dm_lbt, self.wfs, self.M2C_CL, self.calib_CL = build_LBT(param,binning,misReg,psim,make_plots,n_modes,atm)
-        
         # store key variables within the class
         self.param = param
         self.binning = binning
@@ -54,13 +52,21 @@ class LBT_analyser:
         
         if misReg==None:
             self.m_ref = refs[binning-1]
+            # add in additional rotation which is the current estimate for reference with new data
+            if param['new_IF']:
+                self.m_ref.rotationAngle     += -90 # in degrees
         else:
             self.m_ref = misReg
+            
+        self.tel, self.ngs, self.atm, self.dm_lbt, self.wfs, self.M2C_CL, self.calib_CL = build_LBT(self.param,self.binning,self.m_ref,psim,make_plots,n_modes,atm)
             
     def init_SPRINT(self,mode=30,n_mis_reg=3,recompute_sensitivity=True):
         
         # modal basis considered
-        index_modes = [mode]
+        if np.isscalar(mode):
+            index_modes = [mode]
+        else:
+            index_modes = mode
         basis =  emptyClass()
         basis.modes         = self.M2C_CL[:,index_modes]
         basis.extra         = 'LBT_KL_'+str(index_modes[0])              # EXTRA NAME TO DISTINGUISH DIFFERENT SENSITIVITY MATRICES, BE CAREFUL WITH THIS!     
@@ -71,7 +77,7 @@ class LBT_analyser:
 
         plt.figure()
         displayMap(self.tel.OPD)
-        plt.title('KL Mode = ' + str(index_modes[0]))
+        plt.title('KL Mode = ' + str(index_modes))
         plt.show()
 
         self.obj =  emptyClass()
@@ -133,3 +139,39 @@ class LBT_analyser:
         
         # save the SPRINT estimates as a new variable
         self.misreg_est = self.sprint.mis_registration_buffer[-1]
+        
+    def init_SPRINT_ref(self,n_mis_reg=5,recompute_sensitivity=True):
+        
+        # modal basis considered
+        index_modes = self.M2C_CL[:,:]
+        basis =  emptyClass()
+        basis.modes         = index_modes
+        basis.extra         = 'LBT_KL_full'               # EXTRA NAME TO DISTINGUISH DIFFERENT SENSITIVITY MATRICES, BE CAREFUL WITH THIS!     
+
+        #self.dm_lbt.coefs = basis.modes*1e-9
+        #self.tel.resetOPD()  
+        #self.tel*self.dm_lbt
+
+        #plt.figure()
+        #displayMap(self.tel.OPD)
+        #plt.show()
+
+        self.obj =  emptyClass()
+        self.obj.ngs     = self.ngs
+        self.obj.tel     = self.tel
+        self.obj.atm     = self.atm
+        self.obj.wfs     = self.wfs
+        self.obj.dm      = self.dm_lbt
+        self.obj.param   = self.param
+            
+        self.sprint = SPRINT(self.obj, basis, mis_registration_zero_point=self.m_ref, wfs_mis_registered=self.wfs, n_mis_reg=n_mis_reg, recompute_sensitivity=recompute_sensitivity)
+        
+    def run_ref(self,n_iteration=8, n_update_zero_point=0, precision=3, gain_estimation=1, dm_input=None):
+        
+        self.signal = self.calib_CL.D[:,:len(self.M2C_CL[1])]
+        
+        self.sprint.estimate(self.obj, self.signal, n_iteration, n_update_zero_point, precision, gain_estimation, dm_input)
+        
+        # save the SPRINT estimates
+        self.ref_est = self.sprint.mis_registration_buffer[-1]
+        

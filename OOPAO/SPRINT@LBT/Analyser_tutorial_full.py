@@ -15,7 +15,9 @@ from parameterFile_SOUL_I_Band import initializeParameterFile
 param = initializeParameterFile()
 #%% Create your LBT
 
-# Set your binning and which telescope you want to generate the correct file paths parameters
+# Set your binning, whether you're using new or old data, and which telescope you want 
+# Then use BB_file_picker to generate the correct file paths parameters
+param['new_IF'] = True
 binning=1
 BB_file_picker(param, 'Left', binning)
 
@@ -32,6 +34,57 @@ The required extra file path parameters are:
     
 """
 
+#%% Taissirs way to set the right parameters
+
+param['new_IF'] = False 
+side = 'left'
+param['new_IF'] = True 
+side = 'SX'
+
+if param['new_IF']:
+    loc = 'C:/Users/cheritier/OOPAO/user/SOUL/lbt_data/new_data_from_LBT/'
+else:
+    loc = 'C:/Users/cheritier/OOPAO/user/SOUL/lbt_data/old_data_from_LBT/'
+
+    
+if side == 'DX':
+    trck_pup = '20200131_180431'
+    trck_int_mat = '20221205_210843'
+    KL = 'KL_v29'
+    
+if side == 'SX':
+    trck_pup = '20250219_221329'
+    trck_int_mat = '20181215_201757'
+    KL = 'KL_v20'
+
+if side == 'left':
+    trck_pup = 'mode2/20190909_203854/'
+    trck_int_mat = '20181215_201757'
+    KL = 'KL_v20'    
+    side = 'SX'
+
+if side == 'right':
+    trck_pup = '20250219_221329'
+    trck_int_mat = '20181215_201757'
+    KL = 'KL_v20'
+
+
+param['filename_pup']       = loc + side+'/pupils/'+trck_pup+'/pup1.fits'
+param['slopex']             = loc + side+'/pupils/'+trck_pup+'/slopex'
+param['int_mat']            = loc + side+'/'+KL+'/RECs/Intmat_'+trck_int_mat+'.fits'
+if param['new_IF']:
+    param['filename_if']        = loc + side+'/'+KL+'/phase_matrix.sav'
+    param['filename_mir_modes'] = loc + side+'/'+KL+'/phase_matrix.sav'
+    param['filename_m2c']       = loc + side+'/'+KL+'/phase_matrix.sav'
+else:
+    param['filename_if']        = loc + side+'/'+KL+'/LBT672bIF.fits'
+    param['filename_mir_modes'] = loc + side+'/'+KL+'/mirmodes.fits'
+    param['filename_m2c']       = loc + side+'/'+KL+'/m2c.fits'    
+
+param['filename_coord']     = 'C:/Users/cheritier/OOPAO/user/SOUL/lbt_data/DATAfromLBT/left/KL_v20/act_coordinates.fits'
+
+#%%
+
 # This initializes the class and creates the desired LBT model
 LBT = LBT_analyser(param=param,     # define where to find the model parameters
                    binning=binning, # set your binning, must match what you use for BB_file_picker
@@ -39,7 +92,7 @@ LBT = LBT_analyser(param=param,     # define where to find the model parameters
                    psim=False,      # you have the option to generate a synthetic IM rather than using the real one, the default is False
                    make_plots=True, # you can turn off the plots produced in the setup
                    n_modes=500,     # specify your number of modes, this will default to the maximum number allowed for your binning
-                   atm=True)        # you can prevent an atmosphere being generated if you're only running SPRINT and want to speed up the code
+                   atm=False)        # you can prevent an atmosphere being generated if you're only running SPRINT and want to speed up the code
 
 # The above initialization stores your parameters as LBT.param and binning as LBT.binning. 
 # You can also now access objects of the model and the reference mis-registration through your LBT, some examples are below:
@@ -67,9 +120,13 @@ print('Reference Shifts: X = ' + str(LBT.m_ref.shiftX) + ' m, Y = ' + str(LBT.m_
 # This is required before you can run SPRINT, it determines the sensitivity matrices you'll use
 # LBT analyser is hardcoded to just run SPRINT on shiftX, shiftY, and rotation 
 
-LBT.init_SPRINT(mode=30,                      # 30 is the default mode but can be changed if desired
+LBT.init_SPRINT(mode=30,                      # 30 is the default mode but can be changed if desired or be multiple modes
                 n_mis_reg=3,                  # the number of mis-registration variables. The default is 3, which are shiftX, shiftY, and rotation
                 recompute_sensitivity=True)   # if you've already generated sensitivity matrices for this configuration you may not need to do it again
+
+# Example of using multiple modes for SPRINT:
+#modes = [30,40,60,80]
+#LBT.init_SPRINT(mode=modes,recompute_sensitivity=True)
 
 #%% Define the raw LBT files you want to run SPRINT on, three files are needed to generate a demodulated signal with all the associated info
 
@@ -106,6 +163,12 @@ LBT.run_SPRINT(n_iteration=6,         # set the number of iterations you want SP
 # Print the SPRINT estimates compared to the LBT flux estimates
 print('Flux Method shift estimates = ' + str(round(LBT.data_info.sx,4)) + ',' + str(round(LBT.data_info.sy,4)))
 print('SPRINT estimate (X shift, Y shift, rotation) = ' + str(LBT.misreg_est))
+
+# Compare the true IM for mode 30 to what SPRINT has
+from OOPAO.tools.displayTools import display_wfs_signals
+
+display_wfs_signals(LBT.wfs, signals = LBT.calib_CL.D[:,30])
+display_wfs_signals(LBT.wfs, signals = LBT.sprint.calib_0.D) # calib_0 comes from computing meta sensitivity matrices
 
 #%% Run SPRINT on a series of files (eg if a ramp of misregistrations have been applied)
 

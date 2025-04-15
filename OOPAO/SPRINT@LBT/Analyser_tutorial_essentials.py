@@ -15,9 +15,11 @@ from parameterFile_SOUL_I_Band import initializeParameterFile
 param = initializeParameterFile()
 #%% Create your LBT
 
-# This determines which telescope you're using and what binning you want
+# Set your binning, whether you're using new or old data, and which telescope you want 
+# Then use BB_file_picker to generate the correct file paths parameters
+param['new_IF'] = True
 binning=1
-BB_file_picker(param, 'Left', binning)
+BB_file_picker(param, 'Right', binning)
 
 # This initializes the class and creates the desired LBT model
 LBT = LBT_analyser(param,binning,make_plots=True,atm=False)
