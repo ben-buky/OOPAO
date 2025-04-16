@@ -6,8 +6,9 @@ Created on Tue Aug 25 14:35:26 2020
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 import skimage.transform as sk
-
+from OOPAO.tools.displayTools import cl_plot
 from ..MisRegistration import MisRegistration
 from ..calibration.InteractionMatrix import InteractionMatrix, InteractionMatrixFromPhaseScreen
 from ..mis_registration_identification_algorithm.applyMisRegistration import applyMisRegistration
@@ -74,7 +75,10 @@ def estimateMisRegistration(nameFolder,
                             wfs_mis_registrated=None,
                             nIteration=3,
                             dm_input=None,
-                            display=True):
+                            display=True,
+                            tolerance=1/50,
+                            plot = True,
+                            previous_estimate=None):
 
     # ---------- LOAD/COMPUTE SENSITIVITY MATRICES --------------------
     # compute the sensitivity matrices. if the data already exits, the files will be loaded
@@ -100,14 +104,45 @@ def estimateMisRegistration(nameFolder,
         metaMatrix = sensitivity_matrices
 
     #  ---------- ITERATIVE ESTIMATION OF THE PARAMETERS --------------------
+    epsilonMisRegistration_field = ['shiftX', 'shiftY', 'rotationAngle', 'radialScaling', 'tangentialScaling']
     stroke = 1e-12
     criteria = 0
     n_mis_reg = metaMatrix.M.shape[0]
     misRegEstBuffer = np.zeros(n_mis_reg)
-    scalingFactor_values = [1]
-    misRegistration_values = [np.zeros(n_mis_reg)]
-    epsilonMisRegistration_field = ['shiftX','shiftY','rotationAngle','radialScaling','tangentialScaling']
+    misRegEstBuffer_ref = np.zeros(n_mis_reg)
+    for i in range(n_mis_reg):
+        misRegEstBuffer_ref[i] = getattr(misRegistrationZeroPoint, epsilonMisRegistration_field[i])
 
+    scalingFactor_values = [np.ones(basis.modes.shape[1])]
+
+    if previous_estimate is None:
+        misRegistration_values = [np.zeros(n_mis_reg)]
+    else:
+        misRegistration_values = previous_estimate    
+
+    
+    
+    if plot:
+        units = ['[m]','[m]','[deg]','[%]','[%]']
+        list_title = ['Shift X','Shift Y','Rotation Angle','radialScaling','tangentialScaling']
+        list_label = []
+        # list_label = [['Iteration Number','']]
+        list_inp = []
+        for i_mis_reg in range(n_mis_reg):
+            list_inp.append([[0,0],[0,0]])
+            list_label.append(['Iteration Number',units[i_mis_reg]])
+        # plt.close(20)
+        plot_obj = cl_plot(list_fig          = list_inp,
+                           type_fig          = ['plot']*(n_mis_reg),
+                           list_title        = list_title,
+                           list_legend       = [None]*(n_mis_reg),
+                           list_label        = list_label,
+                           list_lim          = [None]*(n_mis_reg),
+                           n_subplot         = [n_mis_reg,1],
+                           list_display_axis = [True]*(n_mis_reg),
+                           list_ratio        = [[0.95,0.1],[1]*(n_mis_reg)], s=20)
+        
+        
     i_iter=0
     flag_paired = tel.isPaired
     tel.isPaired = False
@@ -170,7 +205,6 @@ def estimateMisRegistration(nameFolder,
                     print('Nan Warning !!')
                     scalingFactor_tmp[:] = 1 
 
-                              
                 # temporary mis-registration
                 misReg_tmp          = gainEstimation*np.matmul(metaMatrix.M,np.reshape( calib_in.D@np.diag(1/scalingFactor_tmp) - calib_tmp.D ,calib_in.D.shape[0]*calib_in.D.shape[1]))
             except:
@@ -192,7 +226,7 @@ def estimateMisRegistration(nameFolder,
                             
             # save the data for each iteration
             scalingFactor_values.append(np.copy(scalingFactor_tmp))
-            misRegistration_values.append(np.copy(misRegEstBuffer))
+            misRegistration_values.append(np.copy(misRegEstBuffer) + misRegEstBuffer_ref)
             if display:
                 print('----------------------------------------------------------------------------')
                 misRegistration_out.print_()
@@ -244,10 +278,28 @@ def estimateMisRegistration(nameFolder,
             
             # save the data for each iteration
             scalingFactor_values.append(np.copy(scalingFactor_tmp))
-            misRegistration_values.append(np.copy(misRegEstBuffer))
+            misRegistration_values.append(np.copy(misRegEstBuffer)+misRegEstBuffer_ref)
             if display:
                 misRegistration_out.print_()
-
+            
+            if plot:
+                
+                list_inp = []
+                list_lim = []
+                # list_inp.append([np.arange(i_iter+1),np.mean(np.asarray(scalingFactor_values),axis=1)])
+                for i_mis_reg in range(n_mis_reg):
+                    global_value = np.asarray(misRegistration_values)[:,i_mis_reg]
+                    list_inp.append([np.arange(len(misRegistration_values)),
+                                     global_value])
+                    list_lim.append([-1.2*np.abs(global_value).max(),1.2*np.abs(global_value).max()])
+                plot_obj.list_lim = list_lim
+                cl_plot(list_fig = list_inp,
+                         plt_obj = plot_obj)
+                plt.pause(0.01)
+                if plot_obj.keep_going is False:
+                    break
+                        
+                
             if i_iter==nIteration:
                 criteria =1
 
@@ -259,12 +311,14 @@ def estimateMisRegistration(nameFolder,
 
     # values for validity
     
-    tolerance = [np.rad2deg(np.arctan((dm_0.pitch/50)/(tel.D/2))),dm_0.pitch/50,dm_0.pitch/50,0.0,0.05]                
+    tolerance = [np.rad2deg(np.arctan((dm_0.pitch*tolerance)/(tel.D/2))),dm_0.pitch*tolerance,dm_0.pitch*tolerance,0.05,0.05]                
     
     diff      =  np.abs(misRegistration_values[-1]-misRegistration_values[-2])
     
     # in case of nan
     diff[np.where(np.isnan(diff))] = 10000
+    # print(tolerance)
+    # print(diff)
     if np.argwhere(diff-tolerance[:n_mis_reg]>0).size==0 or contain_nan:    
         # validity of the mis-reg
         validity_flag = True
