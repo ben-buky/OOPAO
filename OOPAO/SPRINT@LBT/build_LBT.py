@@ -325,4 +325,4 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
 
     return  tel, ngs, atm, dm, wfs, M2C_KL, calib_modal
 
-def ref_picker(param,)
+# def ref_picker(param,)
