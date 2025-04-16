@@ -337,9 +337,9 @@ def ref_picker(param,binning):
             m_ref_b1.tangentialScaling = 0.019
             
             m_ref_b2 = MisRegistration()
-            m_ref_b2.shiftX            = 0.137
-            m_ref_b2.shiftY            = 0.023
-            m_ref_b2.rotationAngle     = 209.47
+            m_ref_b2.shiftX            = 0.076
+            m_ref_b2.shiftY            = 0.12
+            m_ref_b2.rotationAngle     = 209.38
             m_ref_b2.radialScaling     = 0.025
             m_ref_b2.tangentialScaling = 0.019
             
