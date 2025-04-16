@@ -11,7 +11,7 @@ from OOPAO.tools.tools import emptyClass, read_fits
 from OOPAO.tools.displayTools import displayMap
 from OOPAO.MisRegistration import MisRegistration
 from lbt_tools import get_int_mat_from_lbt
-from build_LBT import build_LBT
+from build_LBT import build_LBT, ref_picker
 from OOPAO.SPRINT import SPRINT
 
 class LBT_analyser:
@@ -30,31 +30,10 @@ class LBT_analyser:
         self.param = param
         self.binning = binning
         
-        # create reference misregs: need to add in binning = 3 and 4
-    
-        m_ref_b1 = MisRegistration()
-        m_ref_b1.shiftX            = 0.137
-        m_ref_b1.shiftY            = -0.004
-        m_ref_b1.rotationAngle     = 299.486
-        m_ref_b1.radialScaling     = 0.025
-        m_ref_b1.tangentialScaling = 0.019
-        
-        m_ref_b2 = MisRegistration()
-        m_ref_b2.shiftX            = 0.06
-        m_ref_b2.shiftY            = 0.081
-        m_ref_b2.rotationAngle     = 299.395
-        m_ref_b2.radialScaling     = 0.025
-        m_ref_b2.tangentialScaling = 0.019
-        
-        refs = [m_ref_b1,m_ref_b2]
-        
         # set reference misreg for the system
         
         if misReg==None:
-            self.m_ref = refs[binning-1]
-            # add in additional rotation which is the current estimate for reference with new data
-            if param['new_IF']:
-                self.m_ref.rotationAngle     += -90 # in degrees
+            self.m_ref = ref_picker(self.param,self.binning)
         else:
             self.m_ref = misReg
             

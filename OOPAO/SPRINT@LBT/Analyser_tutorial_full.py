@@ -18,8 +18,9 @@ param = initializeParameterFile()
 # Set your binning, whether you're using new or old data, and which telescope you want 
 # Then use BB_file_picker to generate the correct file paths parameters
 param['new_IF'] = True
+param['which_tel'] = 'Left'
 binning=1
-BB_file_picker(param, 'Left', binning)
+BB_file_picker(param, binning)
 
 """ If you have a different file structure to Ben, you will need to adapt BB_file_picker or define the extra parameters you need manually.
 The required extra file path parameters are:

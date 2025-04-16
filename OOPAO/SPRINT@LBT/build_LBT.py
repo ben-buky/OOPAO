@@ -25,14 +25,14 @@ from OOPAO.mis_registration_identification_algorithm.applyMisRegistration import
 from OOPAO.tools.displayTools import displayMap#, makeSquareAxes
 from lbt_tools import get_wfs_pupil, get_int_mat_from_lbt
 
-def BB_file_picker(param,which_tel,binning):
+def BB_file_picker(param,binning):
     
     # set whether you're using new or old data
     if param['new_IF']:
         loc = '../new_data_from_lbt/'
         
         # determine which telescope you're using
-        if which_tel == 'Left':
+        if param['which_tel'] == 'Left':
             
             side = 'SX'
             KL = 'KL_v20'
@@ -41,7 +41,7 @@ def BB_file_picker(param,which_tel,binning):
             # tracking numbers for the interaction matrices - binning=3 doesn't work and binning=4 doesn't exist hence 444444
             trck_int_mat = ['20181215_201757','20190401_211243','20200225_144315','bin4_old']
             
-        if which_tel == 'Right':
+        if param['which_tel'] == 'Right':
             
             side = 'DX'
             KL = 'KL_v29'
@@ -99,7 +99,7 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
         The default is 1. 
     misReg : float, optional
         The reference misregistration to be applied to the model as its zeropoint.
-        The default is None; this will lead to the standard reference calculated by SPRINT to be used.
+        The default is None; this will lead to no reference being applied.
     psim : bool, optional
         Gives the user the option to calibrate the system and use a pseudo synthetic IM rather than the real LBT IM.
         The default is False, meaning the real IM will be used.
@@ -168,23 +168,17 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
     # NEED SEPARATE MISREG OBJECT JUST FOR DM SO WE HAVE NO SHIFTS WHEN CALCULATING M2C
     
     if misReg is None:
-        # apply standard reference misreg from full SPRINT calculation
-        m_ref_wfs = MisRegistration()     
-        m_ref_wfs.shiftX            = 0.137   # in metres
-        m_ref_wfs.shiftY            = -0.004  # in metres
-        
+        # apply empty MisRegistration objects
+        m_ref_wfs = MisRegistration()         
         m_ref_dm = MisRegistration()
-        m_ref_dm.rotationAngle     = 299.486 # in degrees
-        m_ref_dm.radialScaling     = 0.025
-        m_ref_dm.tangentialScaling = 0.019
         
     else:
         m_ref_wfs = MisRegistration()     
-        m_ref_wfs.shiftX            = misReg.shiftX
-        m_ref_wfs.shiftY            = misReg.shiftY
+        m_ref_wfs.shiftX            = misReg.shiftX # in metres
+        m_ref_wfs.shiftY            = misReg.shiftY # in metres
         
         m_ref_dm = MisRegistration()
-        m_ref_dm.rotationAngle     = misReg.rotationAngle
+        m_ref_dm.rotationAngle     = misReg.rotationAngle # in degrees
         m_ref_dm.radialScaling     = misReg.radialScaling
         m_ref_dm.tangentialScaling = misReg.tangentialScaling
     
@@ -325,4 +319,66 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
 
     return  tel, ngs, atm, dm, wfs, M2C_KL, calib_modal
 
-def ref_picker(param,)
+
+
+def ref_picker(param,binning):
+    
+    # set whether you're using new or old data
+    if param['new_IF']:
+        
+        # determine which telescope you're using
+        if param['which_tel'] == 'Left':
+            
+            m_ref_b1 = MisRegistration()
+            m_ref_b1.shiftX            = 0.137
+            m_ref_b1.shiftY            = 0.023
+            m_ref_b1.rotationAngle     = 209.47
+            m_ref_b1.radialScaling     = 0.025
+            m_ref_b1.tangentialScaling = 0.019
+            
+            m_ref_b2 = MisRegistration()
+            m_ref_b2.shiftX            = 0.137
+            m_ref_b2.shiftY            = 0.023
+            m_ref_b2.rotationAngle     = 209.47
+            m_ref_b2.radialScaling     = 0.025
+            m_ref_b2.tangentialScaling = 0.019
+            
+            m_ref_b3 = MisRegistration()
+            
+            m_ref_b4 = MisRegistration()
+            
+            refs = [m_ref_b1,m_ref_b2,m_ref_b3,m_ref_b4]
+            
+
+        if param['which_tel'] == 'Right':
+            
+            m_ref_b1 = MisRegistration()
+            
+            m_ref_b2 = MisRegistration()
+            
+            m_ref_b3 = MisRegistration()
+            
+            m_ref_b4 = MisRegistration()
+            
+            refs = [m_ref_b1,m_ref_b2,m_ref_b3,m_ref_b4]
+            
+    else:
+        
+        m_ref_b1 = MisRegistration()
+        m_ref_b1.shiftX            = 0.137
+        m_ref_b1.shiftY            = -0.004
+        m_ref_b1.rotationAngle     = 299.486
+        m_ref_b1.radialScaling     = 0.025
+        m_ref_b1.tangentialScaling = 0.019
+        
+        m_ref_b2 = MisRegistration()
+        m_ref_b2.shiftX            = 0.06
+        m_ref_b2.shiftY            = 0.081
+        m_ref_b2.rotationAngle     = 299.395
+        m_ref_b2.radialScaling     = 0.025
+        m_ref_b2.tangentialScaling = 0.019
+        
+        refs = [m_ref_b1,m_ref_b2]
+        
+    return refs[binning-1]
+

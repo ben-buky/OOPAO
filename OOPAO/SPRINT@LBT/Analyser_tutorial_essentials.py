@@ -18,8 +18,9 @@ param = initializeParameterFile()
 # Set your binning, whether you're using new or old data, and which telescope you want 
 # Then use BB_file_picker to generate the correct file paths parameters
 param['new_IF'] = True
+param['which_tel'] = 'Right'
 binning=1
-BB_file_picker(param, 'Right', binning)
+BB_file_picker(param, binning)
 
 # This initializes the class and creates the desired LBT model
 LBT = LBT_analyser(param,binning,make_plots=True,atm=False)

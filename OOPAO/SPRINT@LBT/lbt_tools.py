@@ -99,12 +99,18 @@ def get_influence_functions_new(telescope, misReg, filename_IF,filename_mir_mode
     # U = hdu[0].data
     # mod2zon = np.reshape(U[np.where(np.abs(U)!=0)],[663,663])
     # influenceFunctions = influenceFunctions_tmp@ mod2zon.T
-    M2C = tmp['klm2c']
-    validAct = np.where(M2C[:,2]!=0)
-    validAct = validAct[0].astype(int)
-    M2C = M2C[validAct,:influenceFunctions.shape[2]]
-    # M2C *=-1
-    M2C = np.eye(nAct)
+    if filename_IF == filename_M2C:
+        M2C = tmp['klm2c']
+        validAct = np.where(M2C[:,2]!=0)
+        validAct = validAct[0].astype(int)
+        M2C = M2C[validAct,:influenceFunctions.shape[2]]
+        M2C = np.eye(nAct)
+    else:
+        M2C = read_fits(filename_M2C)
+        validAct = np.where(M2C[:,2]!=0)
+        validAct = validAct[0].astype(int)
+        M2C = M2C[validAct,:]
+        M2C *=-1
     influenceFunctions = -influenceFunctions
     hdu = pfits.open(filename_coordinates)
     coordinates_ASM_original =   hdu[0].data[validAct,:]/100
