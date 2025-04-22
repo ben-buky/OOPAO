@@ -32,7 +32,10 @@ class SPRINT:
         self.n_mis_reg = n_mis_reg
         self.recompute_sensitivity = recompute_sensitivity
         if ind_mis_reg is None:
-            self.ind_mis_reg = np.arange(n_mis_reg)
+            self.ind_mis_reg = np.arange(5)
+        else:
+            self.ind_mis_reg = ind_mis_reg
+                
 
         # Case where the shifts are applied in the WFS space
         self.wfs_mis_registered = wfs_mis_registered

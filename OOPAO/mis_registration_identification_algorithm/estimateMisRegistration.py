@@ -127,16 +127,14 @@ def estimateMisRegistration(nameFolder,
     
     if plot:
         units = ['[m]','[m]','[deg]','[%]','[%]']
-        units = units[ind_mis_reg]
+        units = list(np.asarray(units)[ind_mis_reg])
         list_title = ['Shift X','Shift Y','Rotation Angle','radialScaling','tangentialScaling']
-        list_title = list_title[ind_mis_reg]
+        list_title = list(np.asarray(list_title)[ind_mis_reg])
         list_label = []
-        # list_label = [['Iteration Number','']]
         list_inp = []
         for i_mis_reg in range(n_mis_reg):
-            list_inp.append([[0,0],[0,0]])
+            list_inp.append([[0,misRegEstBuffer_ref[i_mis_reg]],[0,misRegEstBuffer_ref[i_mis_reg]]])
             list_label.append(['Iteration Number',units[i_mis_reg]])
-        # plt.close(20)
         plot_obj = cl_plot(list_fig          = list_inp,
                            type_fig          = ['plot']*(n_mis_reg),
                            list_title        = list_title,
@@ -235,7 +233,23 @@ def estimateMisRegistration(nameFolder,
             if display:
                 print('----------------------------------------------------------------------------')
                 misRegistration_out.print_()
+            if plot:
+                
+                list_inp = []
+                list_lim = []
+                # list_inp.append([np.arange(i_iter+1),np.mean(np.asarray(scalingFactor_values),axis=1)])
+                for i_mis_reg in range(n_mis_reg):
+                    global_value = np.asarray(misRegistration_values)[1:,i_mis_reg]
+                    list_inp.append([np.arange(len(misRegistration_values)-1),
+                                     global_value])
+                    list_lim.append([0.8*misRegEstBuffer_ref[i_mis_reg],1.2*misRegEstBuffer_ref[i_mis_reg]])
 
+                plot_obj.list_lim = list_lim
+                cl_plot(list_fig = list_inp,
+                         plt_obj = plot_obj)
+                plt.pause(0.01)
+                if plot_obj.keep_going is False:
+                    break
             if i_iter==nIteration:
                 criteria =1
 
@@ -286,24 +300,22 @@ def estimateMisRegistration(nameFolder,
             misRegistration_values.append(np.copy(misRegEstBuffer)+misRegEstBuffer_ref)
             if display:
                 misRegistration_out.print_()
-            
             if plot:
-                
                 list_inp = []
                 list_lim = []
                 # list_inp.append([np.arange(i_iter+1),np.mean(np.asarray(scalingFactor_values),axis=1)])
                 for i_mis_reg in range(n_mis_reg):
-                    global_value = np.asarray(misRegistration_values)[:,i_mis_reg]
-                    list_inp.append([np.arange(len(misRegistration_values)),
+                    global_value = np.asarray(misRegistration_values)[1:,i_mis_reg]
+                    list_inp.append([np.arange(len(misRegistration_values)-1),
                                      global_value])
-                    list_lim.append([-1.2*np.abs(global_value).max(),1.2*np.abs(global_value).max()])
+                    list_lim.append([0.8*misRegEstBuffer_ref[i_mis_reg],1.2*misRegEstBuffer_ref[i_mis_reg]])
+
                 plot_obj.list_lim = list_lim
                 cl_plot(list_fig = list_inp,
                          plt_obj = plot_obj)
                 plt.pause(0.01)
                 if plot_obj.keep_going is False:
                     break
-                        
                 
             if i_iter==nIteration:
                 criteria =1

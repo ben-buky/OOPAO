@@ -6,13 +6,16 @@ Created on Tue Feb  2 15:56:44 2021
 """
 from astropy.io import fits as pfits
 from joblib import Parallel, delayed
-from OOPAO.tools.interpolateGeometricalTransformation import rotateImageMatrix,rotation,translationImageMatrix,translation,anamorphosis,anamorphosisImageMatrix
+import scipy
 import time
-from OOPAO.MisRegistration  import MisRegistration
 import numpy as np
 import skimage.transform as sk
+import matplotlib.pyplot as plt
+
+from OOPAO.tools.interpolateGeometricalTransformation import rotateImageMatrix,rotation,translationImageMatrix,translation,anamorphosis,anamorphosisImageMatrix
+from OOPAO.MisRegistration  import MisRegistration
 from OOPAO.tools.tools import read_fits, emptyClass
-import scipy
+from OOPAO.tools.displayTools import interactive_show,display_wfs_signals
 
 def get_influence_functions_new(telescope, misReg, filename_IF,filename_mir_modes,filename_coordinates, filename_M2C):
     # misReg.rotationAngle += 0
@@ -21,6 +24,8 @@ def get_influence_functions_new(telescope, misReg, filename_IF,filename_mir_mode
     influenceFunctions_ASM = np.zeros([tmp['dpix']*tmp['dpix'],tmp['klmatrix'].shape[1]])
     influenceFunctions_ASM[tmp['idx_mask'],:] = tmp['klmatrix']
     influenceFunctions_ASM = influenceFunctions_ASM.reshape(tmp['dpix'],tmp['dpix'],influenceFunctions_ASM.shape[1]).T
+    # influenceFunctions_ASM = np.moveaxis(influenceFunctions_ASM,1,2)
+
     # hdu = pfits.open(filename_IF)
     # F = hdu[0].data.byteswap().newbyteorder()
     # influenceFunctions_ASM = F[:,30:470,19:459]
@@ -86,32 +91,41 @@ def get_influence_functions_new(telescope, misReg, filename_IF,filename_mir_mode
     # definition of the function that is run in parallel for each 
     def reconstruction_IF(influMap):
         output = globalTransformation(np.fliplr(influMap))  
+        # output = globalTransformation(influMap)
+
         return output    
     def joblib_reconstruction():
         Q=Parallel(n_jobs=4,prefer='threads')(delayed(reconstruction_IF)(i) for i in influenceFunctions_ASM)
         return Q 
+
     influenceFunctions_tmp =  np.moveaxis(np.asarray(joblib_reconstruction()),0,-1)
     influenceFunctions = influenceFunctions_tmp  [nCrop_x:-nCrop_y,nCrop_x:-nCrop_y,:]
-    # influenceFunctions = influenceFunctions.reshape(influenceFunctions.shape[0]*influenceFunctions.shape[1],nAct)
+    influenceFunctions = -influenceFunctions.reshape(influenceFunctions.shape[0]*influenceFunctions.shape[1],nAct)
     
     # b= time.time()
     # hdu = pfits.open(filename_mir_modes)
     # U = hdu[0].data
     # mod2zon = np.reshape(U[np.where(np.abs(U)!=0)],[663,663])
     # influenceFunctions = influenceFunctions_tmp@ mod2zon.T
-    if filename_IF == filename_M2C:
-        M2C = tmp['klm2c']
-        validAct = np.where(M2C[:,2]!=0)
-        validAct = validAct[0].astype(int)
-        M2C = M2C[validAct,:influenceFunctions.shape[2]]
-        M2C = np.eye(nAct)
-    else:
-        M2C = read_fits(filename_M2C)
-        validAct = np.where(M2C[:,2]!=0)
-        validAct = validAct[0].astype(int)
-        M2C = M2C[validAct,:]
-        M2C *=-1
-    influenceFunctions = -influenceFunctions
+    # if filename_IF == filename_M2C:
+    #     M2C = tmp['klm2c']
+    #     validAct = np.where(M2C[:,2]!=0)
+    #     validAct = validAct[0].astype(int)
+    #     M2C = M2C[validAct,:influenceFunctions.shape[2]]
+    #     M2C = np.eye(nAct)
+    # else:
+    M2C = read_fits(filename_M2C)
+    validAct = np.where(M2C[:,2]!=0)
+    validAct = validAct[0].astype(int)
+    M2C = M2C[validAct,:]
+    # M2C *=-1
+
+    # print(M2C.shape)
+    # print(influenceFunctions.shape)
+    influenceFunctions = influenceFunctions@np.linalg.pinv(M2C[:,:influenceFunctions.shape[1]])
+    
+    influenceFunctions = influenceFunctions.reshape(resolution_M1,resolution_M1,M2C.shape[0])
+
     hdu = pfits.open(filename_coordinates)
     coordinates_ASM_original =   hdu[0].data[validAct,:]/100
     # recenter the initial coordinates_M4_originalinates around 0
@@ -124,6 +138,7 @@ def get_influence_functions(telescope, misReg, filename_IF,filename_mir_modes,fi
     hdu = pfits.open(filename_IF)
     F = hdu[0].data.byteswap().newbyteorder()
     influenceFunctions_ASM = F[:,30:470,19:459]
+    # influenceFunctions_ASM = np.moveaxis(influenceFunctions_ASM, 1,2)
     a= time.time()
     nAct,nx, ny = influenceFunctions_ASM.shape
     pixelSize_ASM_original = 8.25/nx
@@ -193,15 +208,16 @@ def get_influence_functions(telescope, misReg, filename_IF,filename_mir_modes,fi
     influenceFunctions_tmp =  np.moveaxis(np.asarray(joblib_reconstruction()),0,-1)
     influenceFunctions_tmp = influenceFunctions_tmp  [nCrop_x:-nCrop_y,nCrop_x:-nCrop_y,:]
     b= time.time()
-    hdu = pfits.open(filename_mir_modes)
-    U = hdu[0].data
-    mod2zon = np.reshape(U[np.where(np.abs(U)!=0)],[663,663])
-    influenceFunctions = influenceFunctions_tmp@ mod2zon.T
     M2C = read_fits(filename_M2C)
     validAct = np.where(M2C[:,2]!=0)
     validAct = validAct[0].astype(int)
     M2C = M2C[validAct,:]
-    M2C *=-1
+    
+    hdu = pfits.open(filename_mir_modes)
+    U = hdu[0].data
+    mod2zon = np.reshape(U[np.where(np.abs(U)!=0)],[influenceFunctions_tmp.shape[2],influenceFunctions_tmp.shape[2]])
+    influenceFunctions = -influenceFunctions_tmp@ mod2zon.T
+
     # coordinates of ASM before the interpolation        
     hdu = pfits.open(filename_coordinates)
     coordinates_ASM_original =   hdu[0].data[validAct,:]/100
@@ -346,3 +362,15 @@ def get_on_sky_modulated_signal(param,wfs,trck):
     slopes_2D = np.reshape(valid_pix,[valid_pix_map.shape[0],valid_pix_map.shape[1]])
 
     return on_sky_slopes, slopes_2D, data_info
+
+def compare_wfs_signals(wfs,signal_1,signal_2,norma=True):
+    a = display_wfs_signals(wfs, signals = signal_1, norma = norma,returnOutput=True)
+    b = display_wfs_signals(wfs, signals = signal_2, norma = norma,returnOutput=True) # calib_0 comes from computing meta sensitivity matrices
+
+    a[np.isinf(a)] =0
+    b[np.isinf(b)] =0
+
+    plt.close('all')
+    interactive_show(a,b)
+    
+    return

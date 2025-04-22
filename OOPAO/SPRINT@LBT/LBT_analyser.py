@@ -50,14 +50,14 @@ class LBT_analyser:
         basis.modes         = self.M2C_CL[:,index_modes]
         basis.extra         = 'LBT_KL_'+str(index_modes[0])              # EXTRA NAME TO DISTINGUISH DIFFERENT SENSITIVITY MATRICES, BE CAREFUL WITH THIS!     
 
-        self.dm_lbt.coefs = basis.modes*1e-9
-        self.tel.resetOPD()  
-        self.ngs*self.tel*self.dm_lbt*self.wfs
+        # self.dm_lbt.coefs = basis.modes*1e-9
+        # self.tel.resetOPD()  
+        # self.ngs*self.tel*self.dm_lbt*self.wfs
 
-        plt.figure()
-        displayMap(self.tel.OPD)
-        plt.title('KL Mode = ' + str(index_modes))
-        plt.show()
+        # plt.figure()
+        # displayMap(self.tel.OPD)
+        # plt.title('KL Mode = ' + str(index_modes))
+        # plt.show()
 
         self.obj =  emptyClass()
         self.obj.ngs     = self.ngs
@@ -112,9 +112,9 @@ class LBT_analyser:
         self.data_info = data_info
 
 
-    def run_SPRINT(self, n_iteration=3, n_update_zero_point=0, precision=3, gain_estimation=1, dm_input=None):
+    def run_SPRINT(self, n_iteration=3, n_update_zero_point=0, precision=3, gain_estimation=1, dm_input=None,tolerance = 1/50):
         
-        self.sprint.estimate(self.obj, self.on_sky_slopes,n_iteration, n_update_zero_point, precision, gain_estimation, dm_input)
+        self.sprint.estimate(self.obj, self.on_sky_slopes,n_iteration, n_update_zero_point, precision, gain_estimation, dm_input, tolerance)
         
         # save the SPRINT estimates as a new variable
         self.misreg_est = self.sprint.mis_registration_buffer[-1]

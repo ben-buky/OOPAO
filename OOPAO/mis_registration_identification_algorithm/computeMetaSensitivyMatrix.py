@@ -92,10 +92,11 @@ def computeMetaSensitivityMatrix(nameFolder,
     #%% --------------------  COMPUTATION OF THE INTERACTION MATRICES FOLDER --------------------
     epsilonMisRegistration_name  = ['dX','dY','dRot','dmX','dmY']
     epsilonMisRegistration_field = ['shiftX','shiftY','rotationAngle','radialScaling','tangentialScaling']
-    epsilonMisRegistration_name  = epsilonMisRegistration_name[:n_mis_reg]
-    epsilonMisRegistration_field = epsilonMisRegistration_field[:n_mis_reg]
     epsilonMisRegistration_name = list(np.asarray(epsilonMisRegistration_name)[ind_mis_reg])
     epsilonMisRegistration_field = list(np.asarray(epsilonMisRegistration_field)[ind_mis_reg])
+    epsilonMisRegistration_name  = epsilonMisRegistration_name[:n_mis_reg]
+    epsilonMisRegistration_field = epsilonMisRegistration_field[:n_mis_reg]
+    
     try:
         meta_matrix =np.zeros([wfs.nSignal*basis.modes.shape[1],int(len(epsilonMisRegistration_name))])
     except:

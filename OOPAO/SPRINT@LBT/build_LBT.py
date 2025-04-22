@@ -197,9 +197,9 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
                                                                    filename_coordinates = param['filename_coord'],
                                                                    filename_M2C = param['filename_m2c'])
     
-    if param['new_IF']:
-        dm_sum = np.reshape(np.sum(modes_lbt**2, axis =2),[tel.resolution, tel.resolution])
-        tel.pupil = (dm_sum!=0)
+    # if param['new_IF']:
+        # dm_sum = np.reshape(np.sum(modes_lbt**2, axis =2),[tel.resolution, tel.resolution])
+        # tel.pupil = (dm_sum!=0)
     
     # ---------------------     GET PUPIL MASK   --------------------------------
     
@@ -218,14 +218,13 @@ def build_LBT(param,binning=1,misReg=None,psim=False,make_plots=True,n_modes=500
                   telescope             = tel,\
                   modulation            = param['modulation'],\
                   lightRatio            = 0.1,\
-                  n_pix_separation      = 8,\
-                  n_pix_edge            = 16,\
+                  n_pix_separation      = 2*binning,\
+                  n_pix_edge            = 4*binning,\
                   calibModulation       = 0,\
                   psfCentering          = False,\
                   postProcessing        = param['postProcessing'],
                   userValidSignal       = mask.astype(int), 
-                  binning               = binning) 
-    
+                  binning               = binning)    
     if make_plots is True:
         plt.figure()
         plt.imshow(wfs.referenceSignal_2D)
