@@ -78,7 +78,8 @@ def estimateMisRegistration(nameFolder,
                             display=True,
                             tolerance=1/50,
                             plot = True,
-                            previous_estimate=None):
+                            previous_estimate=None,
+                            ind_mis_reg = None):
 
     # ---------- LOAD/COMPUTE SENSITIVITY MATRICES --------------------
     # compute the sensitivity matrices. if the data already exits, the files will be loaded
@@ -99,12 +100,14 @@ def estimateMisRegistration(nameFolder,
                                                             misRegistrationZeroPoint=misRegistrationZeroPoint,
                                                             epsilonMisRegistration=epsilonMisRegistration,
                                                             param=param,
-                                                            wfs_mis_registrated=wfs_mis_registrated)
+                                                            wfs_mis_registrated=wfs_mis_registrated,
+                                                            ind_mis_reg = ind_mis_reg)
     else:
         metaMatrix = sensitivity_matrices
 
     #  ---------- ITERATIVE ESTIMATION OF THE PARAMETERS --------------------
     epsilonMisRegistration_field = ['shiftX', 'shiftY', 'rotationAngle', 'radialScaling', 'tangentialScaling']
+    epsilonMisRegistration_field = list(np.asarray(epsilonMisRegistration_field)[ind_mis_reg])
     stroke = 1e-12
     criteria = 0
     n_mis_reg = metaMatrix.M.shape[0]
@@ -124,7 +127,9 @@ def estimateMisRegistration(nameFolder,
     
     if plot:
         units = ['[m]','[m]','[deg]','[%]','[%]']
+        units = units[ind_mis_reg]
         list_title = ['Shift X','Shift Y','Rotation Angle','radialScaling','tangentialScaling']
+        list_title = list_title[ind_mis_reg]
         list_label = []
         # list_label = [['Iteration Number','']]
         list_inp = []
@@ -192,7 +197,7 @@ def estimateMisRegistration(nameFolder,
                 
         
             # temporary interaction matrix
-            calib_tmp =  InteractionMatrixFromPhaseScreen(ngs,atm,tel,wfs,input_modes_cp,stroke,phaseOffset=0,nMeasurements=5,invert=False,print_time=False)
+            calib_tmp =  InteractionMatrixFromPhaseScreen(ngs,atm,tel,wfs,input_modes_cp,stroke,phaseOffset=0,nMeasurements=1,invert=False,print_time=False)
             # temporary scaling factor    
             try:
                 scalingFactor_tmp   = np.round(np.diag(calib_tmp.D.T@calib_in.D)/ np.diag(calib_tmp.D.T@calib_tmp.D),precision)
@@ -241,7 +246,7 @@ def estimateMisRegistration(nameFolder,
             dm_tmp = applyMisRegistration(tel,misRegistration_out,param, wfs = wfs_mis_registrated,print_dm_properties=False,floating_precision=dm_0.floating_precision,dm_input=dm_input)
             
             # temporary interaction matrix
-            calib_tmp =  InteractionMatrix(ngs,atm,tel,dm_tmp,wfs,basis.modes,stroke,phaseOffset=0,nMeasurements=50,invert=False,print_time=False)
+            calib_tmp =  InteractionMatrix(ngs,atm,tel,dm_tmp,wfs,basis.modes,stroke,phaseOffset=0,nMeasurements=1,invert=False,print_time=False)
             # erase dm_tmp to free memory
             del dm_tmp
             # temporary scaling factor            
@@ -335,7 +340,7 @@ def estimateMisRegistration(nameFolder,
     dm_0 = applyMisRegistration(tel,misRegistrationZeroPoint,param, wfs = wfs_mis_registrated,print_dm_properties=False, floating_precision=dm_0.floating_precision, dm_input = dm_input)
     
     if return_all:
-        return misRegistration_out, scalingFactor_values, misRegistration_values,validity_flag
+        return misRegistration_out, scalingFactor_values, misRegistration_values,validity_flag,calib_tmp
     else:
         return misRegistration_out
 
