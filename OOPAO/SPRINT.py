@@ -173,6 +173,7 @@ class SPRINT:
                                                                                                                                          ngs=obj.ngs,
                                                                                                                                          dm_0=obj.dm,
                                                                                                                                          calib_in=calib_misReg_in,
+                                                                                                                                         calib_0=self.calib_0,
                                                                                                                                          wfs=obj.wfs,
                                                                                                                                          basis=self.basis,
                                                                                                                                          misRegistrationZeroPoint=self.mis_registration_zero_point,

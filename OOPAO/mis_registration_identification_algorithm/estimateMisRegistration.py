@@ -64,6 +64,7 @@ def estimateMisRegistration(nameFolder,
                             wfs,
                             basis,
                             calib_in,
+                            calib_0,
                             misRegistrationZeroPoint,
                             epsilonMisRegistration,
                             param,
@@ -108,7 +109,7 @@ def estimateMisRegistration(nameFolder,
     #  ---------- ITERATIVE ESTIMATION OF THE PARAMETERS --------------------
     epsilonMisRegistration_field = ['shiftX', 'shiftY', 'rotationAngle', 'radialScaling', 'tangentialScaling']
     epsilonMisRegistration_field = list(np.asarray(epsilonMisRegistration_field)[ind_mis_reg])
-    stroke = 1e-12
+    stroke = 1e-9
     criteria = 0
     n_mis_reg = metaMatrix.M.shape[0]
     misRegEstBuffer = np.zeros(n_mis_reg)
@@ -256,13 +257,17 @@ def estimateMisRegistration(nameFolder,
     else:
         while criteria ==0:
             i_iter=i_iter+1
-            # temporary deformable mirror
-            dm_tmp = applyMisRegistration(tel,misRegistration_out,param, wfs = wfs_mis_registrated,print_dm_properties=False,floating_precision=dm_0.floating_precision,dm_input=dm_input)
+            if i_iter>1:
+                # temporary deformable mirror
+                dm_tmp = applyMisRegistration(tel,misRegistration_out,param, wfs = wfs_mis_registrated,print_dm_properties=False,floating_precision=dm_0.floating_precision,dm_input=dm_input)
             
-            # temporary interaction matrix
-            calib_tmp =  InteractionMatrix(ngs,atm,tel,dm_tmp,wfs,basis.modes,stroke,phaseOffset=0,nMeasurements=1,invert=False,print_time=False)
-            # erase dm_tmp to free memory
-            del dm_tmp
+                # temporary interaction matrix
+                calib_tmp =  InteractionMatrix(ngs,atm,tel,dm_tmp,wfs,basis.modes,stroke,phaseOffset=0,nMeasurements=1,invert=False,print_time=False)
+                # erase dm_tmp to free memory
+                del dm_tmp
+            else:
+                calib_tmp = calib_0
+                print('test')
             # temporary scaling factor            
             try:
                 scalingFactor_tmp   = np.round(np.diag(calib_tmp.D.T@calib_in.D)/ np.diag(calib_tmp.D.T@calib_tmp.D),precision)
