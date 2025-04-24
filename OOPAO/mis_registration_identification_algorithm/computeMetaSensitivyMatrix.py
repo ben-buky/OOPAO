@@ -94,8 +94,8 @@ def computeMetaSensitivityMatrix(nameFolder,
     epsilonMisRegistration_field = ['shiftX','shiftY','rotationAngle','radialScaling','tangentialScaling']
     epsilonMisRegistration_name = list(np.asarray(epsilonMisRegistration_name)[ind_mis_reg])
     epsilonMisRegistration_field = list(np.asarray(epsilonMisRegistration_field)[ind_mis_reg])
-    epsilonMisRegistration_name  = epsilonMisRegistration_name[:n_mis_reg]
-    epsilonMisRegistration_field = epsilonMisRegistration_field[:n_mis_reg]
+    # epsilonMisRegistration_name  = epsilonMisRegistration_name[:n_mis_reg]
+    # epsilonMisRegistration_field = epsilonMisRegistration_field[:n_mis_reg]
     
     try:
         meta_matrix =np.zeros([wfs.nSignal*basis.modes.shape[1],int(len(epsilonMisRegistration_name))])
@@ -105,9 +105,10 @@ def computeMetaSensitivityMatrix(nameFolder,
     for i in range(len(epsilonMisRegistration_name)):
         # name for the matrices
         name_0 = foldername + intMat_name +'_0'+ extraName+'.fits'
-        name_p = foldername + intMat_name +'_'+ epsilonMisRegistration_name[i]+'_p_'+str(np.abs(epsilonMisRegistration.shiftX))+ extraName+'.fits'
-        name_n = foldername + intMat_name +'_'+ epsilonMisRegistration_name[i]+'_m_'+str(np.abs(epsilonMisRegistration.shiftX))+ extraName+'.fits'
-        
+        # name_p = foldername + intMat_name +'_'+ epsilonMisRegistration_name[i]+'_p_'+str(np.abs(epsilonMisRegistration.shiftX))+ extraName+'.fits'
+        # name_n = foldername + intMat_name +'_'+ epsilonMisRegistration_name[i]+'_m_'+str(np.abs(epsilonMisRegistration.shiftX))+ extraName+'.fits'
+        name_p = 'imat_p_.fits'
+        name_n = 'imat_m_.fits'        
         stroke = 1e-9
 
 

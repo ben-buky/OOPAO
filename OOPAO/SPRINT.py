@@ -32,7 +32,7 @@ class SPRINT:
         self.n_mis_reg = n_mis_reg
         self.recompute_sensitivity = recompute_sensitivity
         if ind_mis_reg is None:
-            self.ind_mis_reg = np.arange(5)
+            self.ind_mis_reg = np.arange(n_mis_reg)
         else:
             self.ind_mis_reg = ind_mis_reg
                 

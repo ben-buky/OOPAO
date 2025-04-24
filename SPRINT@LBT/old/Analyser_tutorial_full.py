@@ -11,9 +11,9 @@ import numpy as np
 from LBT_analyser import LBT_analyser
 from build_LBT import BB_file_picker
 from OOPAO.tools.displayTools import display_wfs_signals, displayMap
-from lbt_tools import compare_wfs_signals
+
 #%% read parameter file
-from parameterFile_SOUL_I_Band_final import initializeParameterFile
+from parameterFile_SOUL_I_Band_vcth import initializeParameterFile
 param = initializeParameterFile()
 #%% Create your LBT
 
@@ -39,6 +39,8 @@ The required extra file path parameters are:
 
 #%% Taissirs way to set the right parameters
 
+param['new_IF'] = False 
+side = 'left'
 param['new_IF'] = False 
 side = 'left'
 
@@ -90,11 +92,11 @@ from OOPAO.MisRegistration import MisRegistration
 
 
 m = MisRegistration()
-m.rotationAngle = 299.515 -0.5
-m.shiftX = 0.135
-m.shiftY = 0.005
-m.radialScaling = 0.021
-m.tangentialScaling = 0.026
+m.rotationAngle = 45
+# m.shiftX = 0.13
+# m.shiftY = 0.034
+m.radialScaling = 0.02
+m.tangentialScaling = 0.02
 
 # This initializes the class and creates the desired LBT model
 LBT = LBT_analyser(param=param,     # define where to find the model parameters
@@ -126,21 +128,103 @@ plt.show()
 
 # Access components of the reference misregistration
 print('Reference Shifts: X = ' + str(LBT.m_ref.shiftX) + ' m, Y = ' + str(LBT.m_ref.shiftY) + ' m')
+#
+    
 
+pupil = LBT.tel.pupil.copy()
+# #%%
+
+# plt.close('all')
+
+# ind = [5,6,7,8]
+# # ind = [30]
+# # ind = np.arange(49)
+# ref_wfs=[]
+# for i in range(4):
+#     ref_wfs.append(display_wfs_signals(LBT.wfs, signals = LBT.calib_CL.D[:,ind[i]],norma = True, returnOutput=True))
+# plt.close('all')
+# for i in range(4):
+#     LBT.dm_lbt.coefs = LBT.M2C_CL[:,ind[i]]*1e-9
+#     LBT.ngs*LBT.tel*LBT.dm_lbt
+#     ref_OPD_0 = LBT.tel.OPD.copy()
+#     plt.figure()
+#     #normal 
+#     LBT.tel.pupil = pupil.copy()
+#     ref_OPD = ref_OPD_0.copy()
+#     plt.subplot(3,5,5)
+#     plt.imshow(ref_wfs[i])
+#     plt.subplot(3,5,15)
+#     plt.imshow(ref_wfs[i])
+#     plt.subplot(3,5,10)
+#     plt.imshow(ref_wfs[i])
+
+#     for i_r in range(4):
+#         if i_r>0:
+#             ref_OPD = np.rot90(ref_OPD) 
+#             LBT.tel.pupil = np.rot90(LBT.tel.pupil)
+#         LBT.tel.OPD = ref_OPD           
+#         LBT.tel*LBT.wfs
+#         signal_normal = LBT.wfs.signal.copy()
+#         plt.subplot(3,5,i_r+1)
+#         plt.imshow(LBT.wfs.signal_2D)
+    
+#     #flip 
+#     ref_OPD = np.flip(ref_OPD_0.copy())
+#     LBT.tel.pupil = np.flip(pupil.copy())
+
+#     for i_r in range(4):
+#         if i_r>0:
+#             ref_OPD = np.rot90(ref_OPD)            
+#             LBT.tel.pupil = np.rot90(LBT.tel.pupil)
+
+#         LBT.tel.OPD = ref_OPD
+#         LBT.tel*LBT.wfs
+#         signal_normal = LBT.wfs.signal.copy()
+#         plt.subplot(3,5,5+i_r+1)
+#         plt.imshow(LBT.wfs.signal_2D)
+        
+#     #fliplr
+#     ref_OPD = np.fliplr(ref_OPD_0.copy())
+#     LBT.tel.pupil= np.fliplr(pupil.copy())
+
+#     for i_r in range(4):
+#         if i_r>0:
+#             ref_OPD = np.rot90(ref_OPD)    
+#             LBT.tel.pupil = np.rot90(LBT.tel.pupil)
+
+#         LBT.tel.OPD = ref_OPD
+#         LBT.tel*LBT.wfs
+#         signal_normal = LBT.wfs.signal.copy()
+#         plt.subplot(3,5,10+i_r+1)
+#         plt.imshow(LBT.wfs.signal_2D)
+
+        
+
+#     #normal 
+#     # LBT.tel*LBT.wfs
+#     # signal_normal = wfs.signal.copy()
 #%%
 plt.close('all')
 ind = np.arange(9)
 
+ind = np.arange(100,120)
+
+
 LBT.dm_lbt.coefs = LBT.M2C_CL[:,ind]*1e-9
 LBT.ngs*LBT.tel*LBT.dm_lbt*LBT.wfs
-compare_wfs_signals(LBT.wfs,LBT.calib_CL.D[:,ind],LBT.wfs.signal)
+
+
 displayMap(LBT.tel.OPD)
+
+display_wfs_signals(LBT.wfs, signals = LBT.calib_CL.D[:,ind],norma = True)
+display_wfs_signals(LBT.wfs, signals = LBT.wfs.signal,norma=True) # calib_0 comes from computing meta sensitivity matrices
+
 
 #%% Initialize SPRINT
 # This is required before you can run SPRINT, it determines the sensitivity matrices you'll use
 # LBT analyser is hardcoded to just run SPRINT on shiftX, shiftY, and rotation 
 # ind = [10,12,14,16,20,30,60,100,120]
-ind = 30
+ind = [5,6,7,8]
 
 LBT.init_SPRINT(mode=ind,                      # 30 is the default mode but can be changed if desired or be multiple modes
                 n_mis_reg=3,                  # the number of mis-registration variables. The default is 3, which are shiftX, shiftY, and rotation
@@ -153,121 +237,108 @@ LBT.init_SPRINT(mode=ind,                      # 30 is the default mode but can 
 #%%
 LBT.on_sky_slopes = LBT.calib_CL.D[:,ind]
 # Run SPRINT - SPRINT will run on whatever is saved as LBT.on_sky_slopes
-LBT.run_SPRINT(n_iteration=5,         # set the number of iterations you want SPRINT to do, defaults to 3
-               n_update_zero_point=0, # state the number of times you want to re-calculate your sensitivity matrices and update your zero-point. Default is 0
+LBT.run_SPRINT(n_iteration=8,         # set the number of iterations you want SPRINT to do, defaults to 3
+               n_update_zero_point=2, # state the number of times you want to re-calculate your sensitivity matrices and update your zero-point. Default is 0
                precision=3,           # precision to round your estimates to, default is 3
                gain_estimation=1,     # gain to apply after one estimation
                dm_input=None,
                tolerance=10)         # you can provide a dm_input, but this should always be None if you have param['isLBT'] = True
 
-
 #%%
-compare_wfs_signals(LBT.wfs,LBT.calib_CL.D[:,ind],LBT.sprint.calib_last.D)
 
-# compare_wfs_signals(LBT.wfs,LBT.calib_CL.D[:,ind],LBT.sprint.calib_0.D)
-# display_wfs_signals(LBT.wfs, signals = LBT.calib_CL.D[:,ind],norma = True)
-# display_wfs_signals(LBT.wfs, signals = LBT.sprint.calib_last.D,norma=True) # calib_0 comes from computing meta sensitivity matrices
+display_wfs_signals(LBT.wfs, signals = LBT.calib_CL.D[:,ind],norma = True)
+display_wfs_signals(LBT.wfs, signals = LBT.sprint.calib_last.D,norma=True) # calib_0 comes from computing meta sensitivity matrices
 
-#%% Initialize SPRINT
-# This is required before you can run SPRINT, it determines the sensitivity matrices you'll use
-# LBT analyser is hardcoded to just run SPRINT on shiftX, shiftY, and rotation 
-# ind = [10,12,14,16,20,30,60,100,120]
-ind = 30
+#%% Define the raw LBT files you want to run SPRINT on, three files are needed to generate a demodulated signal with all the associated info
 
-LBT.init_SPRINT(mode=ind,                      # 30 is the default mode but can be changed if desired or be multiple modes
-                n_mis_reg=3,                  # the number of mis-registration variables. The default is 3, which are shiftX, shiftY, and rotation
-                recompute_sensitivity=True)   # if you've already generated sensitivity matrices for this configuration you may not need to do it again
-
-
-#%% Use SPRINT to estimate mis-registrations of one set of raw signals from LBT
-
-# Define the files to use
+# Set the tracking number
 trck = '20201001_075153'
-
+# Set the folder where the files are located
 loc = '../demodulated_slopes_orig/bin_'+str(LBT.binning)+'/'+str(trck)
-
+# Save the full file path to each required file
 slopes = loc + '/demodulated_slopes.fits'
 phi = loc + '/phi.fits'
 info = loc + '/data_info.fits'
 
-# De-modulate the LBT data
+#%% De-modulate the LBT data
 LBT.get_on_sky_modulated_signal(slopes=slopes, phi=phi, info=info)
 
-# Plot the signal being sent to SPRINT
+# This saves the 2D signal as LBT.slopes_2D, the 1D signal for SPRINT as LBT.on_sky_slopes, and the data info as LBT.data_info
+
+#%% Run SPRINT on the demodulated signal and print the final estimates
+
+# Plot the signal being sent to SPRINT in 2D
 plt.figure()
 plt.imshow(LBT.slopes_2D)
 plt.title('Signal')
 plt.show()
 
-# Run SPRINT
-LBT.run_SPRINT(n_iteration=6,gain_estimation=1)
+# Run SPRINT - SPRINT will run on whatever is saved as LBT.on_sky_slopes
+LBT.run_SPRINT(n_iteration=6,         # set the number of iterations you want SPRINT to do, defaults to 3
+               n_update_zero_point=0, # state the number of times you want to re-calculate your sensitivity matrices and update your zero-point. Default is 0
+               precision=3,           # precision to round your estimates to, default is 3
+               gain_estimation=1,     # gain to apply after one estimation
+               dm_input=None)         # you can provide a dm_input, but this should always be None if you have param['isLBT'] = True
 
+
+# Print the SPRINT estimates compared to the LBT flux estimates
 print('Flux Method shift estimates = ' + str(round(LBT.data_info.sx,4)) + ',' + str(round(LBT.data_info.sy,4)))
 print('SPRINT estimate (X shift, Y shift, rotation) = ' + str(LBT.misreg_est))
 
+# Compare the true IM for mode 30 to what SPRINT has
+from OOPAO.tools.displayTools import display_wfs_signals
 
+display_wfs_signals(LBT.wfs, signals = LBT.calib_CL.D[:,30])
+display_wfs_signals(LBT.wfs, signals = LBT.sprint.calib_0.D) # calib_0 comes from computing meta sensitivity matrices
 
+#%% Run SPRINT on a series of files (eg if a ramp of misregistrations have been applied)
 
-# #%%
-# from OOPAO.tools.tools import emptyClass
-# from OOPAO.SPRINT import SPRINT
+# Define the files using the unique tracking number for each set
+trck = ['20201001_075009','20201001_075108','20201001_075153','20201001_075233','20201001_075444']
 
+# Create arrays for storing flux method and SPRINT estimates
+Flux_ests = np.zeros((len(trck),2))
+SPRINT_ests = np.zeros((len(trck),3))
 
-# # modal basis considered
-# index_modes = [30]
-# basis =  emptyClass()
-# basis.modes         = LBT.M2C_CL[:,index_modes]
-# basis.extra         = 'LBT_KL_'+str(index_modes[0])              # EXTRA NAME TO DISTINGUISH DIFFERENT SENSITIVITY MATRICES, BE CAREFUL WITH THIS!     
-# obj =  emptyClass()
-# obj.ngs     = LBT.ngs
-# obj.tel     = LBT.tel
-# obj.atm     = LBT.atm
-# obj.wfs     = LBT.wfs
-# obj.dm      = LBT.dm_lbt
-# obj.param   = LBT.param
-
-
-# sprint_dict = dict()
-
-# input_rot = [-1.5,-1,-0.5,-0.25,0,0.25,0.5,1,1.5]
-# input_rot = [-1.5,-0.5,0, 0.5,1.5]
-
-# for i in range(len(input_rot)):
-#     m = MisRegistration()
-#     m.rotationAngle = 299.515-0.5
-#     # m.rotationAngle = 299.515-0.5-5
-
-#     m.shiftX = 0.135
-#     m.shiftY = 0.005
-#     m.radialScaling = 0.021
-#     m.tangentialScaling = 0.026
+for i in range(len(trck)):
     
-#     m.rotationAngle += input_rot[i]
-#     sprint_dict['sprint_'+str(i)] = SPRINT(obj,
-#                     basis,
-#                     mis_registration_zero_point=m,
-#                     wfs_mis_registered=LBT.wfs,
-#                     n_mis_reg=1,
-#                     recompute_sensitivity=True,
-#                     fast_algorithm = False,
-#                     ind_mis_reg=[2,0,1,3,4])
-
-
-# est = []
-# for i in range(len(input_rot)):
-#     plt.close('all')
-#     tmp_sprint = sprint_dict['sprint_'+str(i)]
-#     tmp_sprint.fast_algorithm = False
-#     tmp_sprint.estimate(obj,
-#                         on_sky_slopes = LBT.calib_CL.D[:,index_modes],
-#                         n_iteration=4,
-#                         tolerance=10)
+    loc = '../demodulated_slopes_orig/bin_1/'+str(trck[i])
     
-#     est.append(tmp_sprint.mis_registration_zero_point.rotationAngle -tmp_sprint.mis_registration_out.rotationAngle)
-    
-# plt.figure(),
-# plt.plot(input_rot,input_rot,'-')
-# # plt.plot(input_rot,np.asarray(est).T,'-o'),
-# plt.plot(input_rot,np.asarray(est)-11.25,'-o'),
+    slopes = loc + '/demodulated_slopes.fits'
+    phi = loc + '/phi.fits'
+    info = loc + '/data_info.fits'
 
-# plt.xlabel('Input Rotation'),plt.ylabel('Output Rotation')
+    # De-modulate the LBT data
+    LBT.get_on_sky_modulated_signal(slopes=slopes, phi=phi, info=info)
+
+    # Plot the signal being sent to SPRINT
+    plt.figure()
+    plt.imshow(LBT.slopes_2D)
+    plt.title('Signal for ' + str(trck[i]))
+    plt.show()
+    
+    # Run SPRINT
+    LBT.run_SPRINT(n_iteration=6,gain_estimation=1)
+    print('SPRINT MISREGS = ' + str(LBT.misreg_est))
+    
+    # Save the estimates
+    Flux_ests[i] = [LBT.data_info.sx,LBT.data_info.sy]
+    SPRINT_ests[i] = LBT.misreg_est
+
+# Plot the results for X and Y shift
+fig,axs = plt.subplots(1,2,figsize=(10,5))
+
+axs[0].plot(SPRINT_ests[:,0],'.--',label='SPRINT')
+axs[0].plot(Flux_ests[:,0],'.--',label='LBT')
+axs[0].set(xlabel='Mis-registration case',ylabel='ShiftX [m]')
+axs[0].legend()
+
+axs[1].plot(SPRINT_ests[:,1],'.--',label='SPRINT')
+axs[1].plot(Flux_ests[:,1],'.--',label='LBT')
+axs[1].set(xlabel='Mis-registration case',ylabel='ShiftY [m]')
+axs[1].legend()
+
+plt.suptitle('SPRINT vs Flux Method on LBT Data')
+fig.tight_layout()
+plt.show()
+    

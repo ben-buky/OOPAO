@@ -39,7 +39,7 @@ class LBT_analyser:
             
         self.tel, self.ngs, self.atm, self.dm_lbt, self.wfs, self.M2C_CL, self.calib_CL = build_LBT(self.param,self.binning,self.m_ref,psim,make_plots,n_modes,atm)
             
-    def init_SPRINT(self,mode=30,n_mis_reg=3,recompute_sensitivity=True):
+    def init_SPRINT(self,mode=30,n_mis_reg=3,recompute_sensitivity=True,ind_mis_reg = None):
         
         # modal basis considered
         if np.isscalar(mode):
@@ -67,9 +67,9 @@ class LBT_analyser:
         self.obj.dm      = self.dm_lbt
         self.obj.param   = self.param
             
-        self.sprint = SPRINT(self.obj, basis, mis_registration_zero_point=self.m_ref, wfs_mis_registered=self.wfs, n_mis_reg=n_mis_reg, recompute_sensitivity=recompute_sensitivity)
+        self.sprint = SPRINT(self.obj, basis, mis_registration_zero_point=self.m_ref, wfs_mis_registered=self.wfs, n_mis_reg=n_mis_reg, recompute_sensitivity=recompute_sensitivity,ind_mis_reg=ind_mis_reg)
         
-    def get_on_sky_modulated_signal(self,slopes,phi,info):
+    def get_on_sky_modulated_signal(self,slopes,phi):
         # raw slopes from LBT (scrambled)
         on_sky_slopes_raw = read_fits(slopes)
         phi_raw = read_fits(phi)
@@ -78,25 +78,25 @@ class LBT_analyser:
         on_sky_slopes_ordered = get_int_mat_from_lbt(self.param,self.wfs, IM_from_LBT = on_sky_slopes_raw)
         phi_ordered = get_int_mat_from_lbt(self.param,self.wfs, IM_from_LBT = phi_raw)
         
-        # gather telemetry data from measurement
-        data_info_raw = read_fits(info)
+        # # gather telemetry data from measurement
+        # data_info_raw = read_fits(info)
 
-        # store the info into a Python class
-        data_info = emptyClass()
-        data_info.sx                = data_info_raw[0] # flux method estimate for X shift
-        data_info.sy                = data_info_raw[1] # flux method estimate for Y shift
-        data_info.re_rotator_angle  = data_info_raw[2]
-        data_info.tel_rotator_angle = data_info_raw[3]
-        data_info.mode_index        = int(data_info_raw[4])
-        data_info.amplitude         = data_info_raw[5]
-        data_info.frequency         = data_info_raw[6]
-        data_info.n_iteration       = data_info_raw[7]
+        # # store the info into a Python class
+        # data_info = emptyClass()
+        # data_info.sx                = data_info_raw[0] # flux method estimate for X shift
+        # data_info.sy                = data_info_raw[1] # flux method estimate for Y shift
+        # data_info.re_rotator_angle  = data_info_raw[2]
+        # data_info.tel_rotator_angle = data_info_raw[3]
+        # data_info.mode_index        = int(data_info_raw[4])
+        # data_info.amplitude         = data_info_raw[5]
+        # data_info.frequency         = data_info_raw[6]
+        # data_info.n_iteration       = data_info_raw[7]
         
         reference_imat      = get_int_mat_from_lbt(self.param,self.wfs)
-        reference_slope     = reference_imat[:,data_info.mode_index]
+        reference_slope     = reference_imat[:,30]
 
         # reconstruct the slopes from modulation parameter
-        on_sky_slopes = (np.sin(phi_ordered))*on_sky_slopes_ordered/data_info.amplitude 
+        on_sky_slopes = (np.sin(phi_ordered))*on_sky_slopes_ordered/10e-9
         n = len(on_sky_slopes)
         on_sky_slopes[:n//2]*=-1
         on_sky_slopes*= np.sign(reference_slope.T@on_sky_slopes/reference_slope.T@reference_slope)
@@ -109,7 +109,7 @@ class LBT_analyser:
         self.slopes_2D = np.reshape(valid_pix,[valid_pix_map.shape[0],valid_pix_map.shape[1]])
         
         self.on_sky_slopes = on_sky_slopes
-        self.data_info = data_info
+        # self.data_info = data_info
 
 
     def run_SPRINT(self, n_iteration=3, n_update_zero_point=0, precision=3, gain_estimation=1, dm_input=None,tolerance = 1/50):
